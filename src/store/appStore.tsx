@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import type { Patient, Reminder } from '@/types';
+import type { Patient, Medication, Reminder } from '@/types';
 import { patients as allPatients, currentPatient as defaultPatient } from '@/data/patients';
 
 export interface PushNotification {
@@ -19,14 +19,22 @@ interface AppState {
   onboardingCompleted: boolean;
   calendarConnected: boolean;
   notifications: PushNotification[];
-  setCurrentPatient: (p: Patient) => void;
+  pushNotificationsEnabled: boolean;
+  departureRemindersEnabled: boolean;
+  aiTimingEnabled: boolean;
+  setCurrentPatient: (p: Patient | ((prev: Patient) => Patient)) => void;
   updateReminderStatus: (id: string, status: Reminder['status']) => void;
   setOnboardingCompleted: (v: boolean) => void;
   setCalendarConnected: (v: boolean) => void;
   setReminders: (r: Reminder[]) => void;
+  addMedication: (med: Medication) => void;
   pushNotification: (n: PushNotification) => void;
   dismissNotification: (id: string) => void;
   clearNotifications: () => void;
+  setPushNotificationsEnabled: (v: boolean) => void;
+  setDepartureRemindersEnabled: (v: boolean) => void;
+  setAiTimingEnabled: (v: boolean) => void;
+  resetToDefaults: () => void;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -93,11 +101,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [onboardingCompleted, setOnboardingCompleted] = useState(true);
   const [calendarConnected, setCalendarConnected] = useState(true);
   const [notifications, setNotifications] = useState<PushNotification[]>([]);
+  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(true);
+  const [departureRemindersEnabled, setDepartureRemindersEnabled] = useState(true);
+  const [aiTimingEnabled, setAiTimingEnabled] = useState(true);
 
   const updateReminderStatus = useCallback((id: string, status: Reminder['status']) => {
     setReminders((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status, respondedAt: new Date().toISOString() } : r)),
     );
+  }, []);
+
+  const addMedication = useCallback((med: Medication) => {
+    setCurrentPatient((prev) => ({
+      ...prev,
+      medications: [...prev.medications, med],
+    }));
+    // Also create a pending reminder for this medication
+    const timeLabel =
+      med.prescribedTime === 'morning' ? '8:00 AM' :
+      med.prescribedTime === 'evening' ? '8:00 PM' : '8:00 AM';
+    const newReminder: Reminder = {
+      id: `rem-${med.id}-${Date.now()}`,
+      medicationId: med.id,
+      patientId: 'p-001',
+      scheduledTime: timeLabel,
+      originalPrescribedTime: timeLabel,
+      status: 'pending',
+      aiReason: `${med.name} has been added to your regimen. AI will learn your routine and optimize timing over the next few days.`,
+      aiConfidence: 0.75,
+      isReschedule: false,
+      rescheduleCount: 0,
+      type: 'regular',
+    };
+    setReminders((prev) => [...prev, newReminder]);
+    if (med.prescribedTime === 'twice_daily') {
+      const eveningReminder: Reminder = {
+        ...newReminder,
+        id: `rem-${med.id}-eve-${Date.now()}`,
+        scheduledTime: '8:00 PM',
+        originalPrescribedTime: '8:00 PM',
+        aiReason: `Evening dose of ${med.name}. AI will adjust timing based on your dinner habits.`,
+      };
+      setReminders((prev) => [...prev, eveningReminder]);
+    }
   }, []);
 
   const pushNotification = useCallback((n: PushNotification) => {
@@ -112,6 +158,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setNotifications([]);
   }, []);
 
+  const resetToDefaults = useCallback(() => {
+    setCurrentPatient(defaultPatient);
+    setReminders(initialReminders.map((r) => ({ ...r })));
+    setNotifications([]);
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
@@ -121,14 +173,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         onboardingCompleted,
         calendarConnected,
         notifications,
+        pushNotificationsEnabled,
+        departureRemindersEnabled,
+        aiTimingEnabled,
         setCurrentPatient,
         updateReminderStatus,
         setOnboardingCompleted,
         setCalendarConnected,
         setReminders,
+        addMedication,
         pushNotification,
         dismissNotification,
         clearNotifications,
+        setPushNotificationsEnabled,
+        setDepartureRemindersEnabled,
+        setAiTimingEnabled,
+        resetToDefaults,
       }}
     >
       {children}

@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Download } from 'lucide-react';
+import { Download, Check, Loader2 } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, PieChart, Pie, Cell,
@@ -23,6 +24,27 @@ const comparisonData = [
 
 export function ReportsPage() {
   const { patients } = useAppStore();
+  const [exporting, setExporting] = useState(false);
+  const [exported, setExported] = useState(false);
+
+  const handleExport = () => {
+    setExporting(true);
+    setTimeout(() => {
+      // Generate CSV content
+      const header = 'Patient ID,Adherence Rate,Risk Level,Consecutive Missed\n';
+      const rows = patients.map((p) => `${p.id},${p.adherenceRate}%,${p.riskLevel},${p.consecutiveMissed}`).join('\n');
+      const blob = new Blob([header + rows], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'medisync-population-report.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setExporting(false);
+      setExported(true);
+      setTimeout(() => setExported(false), 3000);
+    }, 800);
+  };
 
   const distributionData = [
     { range: '0-50%', count: patients.filter((p) => p.adherenceRate < 50).length },
@@ -38,8 +60,14 @@ export function ReportsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Population Reports</h1>
           <p className="text-sm text-gray-500">Aggregated adherence data and trends</p>
         </div>
-        <Button variant="outline" className="text-sm">
-          <Download className="w-4 h-4 mr-2" /> Export Report
+        <Button variant="outline" className="text-sm" onClick={handleExport} disabled={exporting}>
+          {exporting ? (
+            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Exporting...</>
+          ) : exported ? (
+            <><Check className="w-4 h-4 mr-2" /> Exported!</>
+          ) : (
+            <><Download className="w-4 h-4 mr-2" /> Export Report</>
+          )}
         </Button>
       </div>
 

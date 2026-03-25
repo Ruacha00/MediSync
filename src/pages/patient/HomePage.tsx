@@ -10,9 +10,12 @@ import { calendarEvents } from '@/data/calendarEvents';
 import type { Reminder } from '@/types';
 
 function ReminderCard({ reminder, onRespond }: { reminder: Reminder; onRespond: (id: string, status: Reminder['status']) => void }) {
+  const { currentPatient } = useAppStore();
   const [showAI, setShowAI] = useState(false);
   const [animatingTaken, setAnimatingTaken] = useState(false);
-  const med = medicationDatabase.find((m) => m.id === reminder.medicationId);
+  const med =
+    currentPatient.medications.find((m) => m.id === reminder.medicationId) ||
+    medicationDatabase.find((m) => m.id === reminder.medicationId);
   if (!med) return null;
 
   const isTaken = reminder.status === 'taken';
@@ -204,7 +207,7 @@ function ReminderCard({ reminder, onRespond }: { reminder: Reminder; onRespond: 
 }
 
 export function HomePage() {
-  const { currentPatient, reminders, updateReminderStatus } = useAppStore();
+  const { currentPatient, reminders, updateReminderStatus, departureRemindersEnabled } = useAppStore();
 
   const todayReminders = reminders.filter((r) => r.patientId === currentPatient.id);
   const takenCount = todayReminders.filter((r) => r.status === 'taken').length;
@@ -245,7 +248,7 @@ export function HomePage() {
       </motion.div>
 
       {/* Departure reminder */}
-      {departureEvent && (
+      {departureEvent && departureRemindersEnabled && (
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}

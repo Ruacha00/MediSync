@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, XCircle, RefreshCw, Cable, Clock, ArrowRight, Shield } from 'lucide-react';
+import { CheckCircle2, XCircle, RefreshCw, Cable, Clock, ArrowRight, Shield, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-const connections = [
+const initialConnections = [
   {
     name: 'City General Hospital EHR',
     type: 'Epic (FHIR R4)',
@@ -37,6 +38,23 @@ const apiLog = [
 ];
 
 export function IntegrationPage() {
+  const [connections, setConnections] = useState(initialConnections);
+  const [retrying, setRetrying] = useState<string | null>(null);
+
+  const handleRetry = (connName: string) => {
+    setRetrying(connName);
+    setTimeout(() => {
+      setConnections((prev) =>
+        prev.map((c) =>
+          c.name === connName
+            ? { ...c, status: 'connected' as const, lastSync: 'Just now', patients: 1 }
+            : c,
+        ),
+      );
+      setRetrying(null);
+    }, 1500);
+  };
+
   return (
     <div>
       <div className="mb-8">
@@ -75,8 +93,18 @@ export function IntegrationPage() {
               <span className="text-gray-500">{conn.patients} patients</span>
             </div>
             {conn.status === 'disconnected' && (
-              <Button size="sm" variant="outline" className="w-full mt-3 h-7 text-xs">
-                <RefreshCw className="w-3 h-3 mr-1" /> Retry Connection
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full mt-3 h-7 text-xs"
+                disabled={retrying === conn.name}
+                onClick={() => handleRetry(conn.name)}
+              >
+                {retrying === conn.name ? (
+                  <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Connecting...</>
+                ) : (
+                  <><RefreshCw className="w-3 h-3 mr-1" /> Retry Connection</>
+                )}
               </Button>
             )}
           </motion.div>

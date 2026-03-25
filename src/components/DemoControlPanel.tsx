@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Bell, Clock, AlertTriangle, Calendar, Zap, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
-import { useAppStore, type PushNotification, initialReminders } from '@/store/appStore';
+import { useAppStore, type PushNotification } from '@/store/appStore';
 import { medicationDatabase } from '@/data/medications';
 import { calendarEvents } from '@/data/calendarEvents';
 import type { Reminder } from '@/types';
@@ -15,15 +15,19 @@ function nowTime() {
 }
 
 export function DemoControlPanel() {
-  const { pushNotification, clearNotifications, reminders, setReminders } = useAppStore();
+  const { pushNotification, reminders, setReminders, currentPatient, resetToDefaults } = useAppStore();
   const [collapsed, setCollapsed] = useState(false);
 
-  const activeMeds = medicationDatabase.slice(0, 3);
+  const allMeds = [...medicationDatabase, ...currentPatient.medications.filter(
+    (m) => !medicationDatabase.some((db) => db.id === m.id),
+  )];
+  const findMed = (id: string) => allMeds.find((m) => m.id === id);
+  const activeMeds = currentPatient.medications;
   const departureEvent = calendarEvents.find((e) => e.isOutdoor);
 
   // --- Trigger: send notification for a medication + ensure a pending reminder exists ---
   const triggerMedReminder = (medId: string) => {
-    const med = medicationDatabase.find((m) => m.id === medId);
+    const med = findMed(medId);
     if (!med) return;
 
     const existing = reminders.find((r) => r.medicationId === medId && r.status === 'pending');
@@ -61,7 +65,7 @@ export function DemoControlPanel() {
     const pendingReminder = reminders.find((r) => r.status === 'pending');
     if (!pendingReminder) return;
 
-    const med = medicationDatabase.find((m) => m.id === pendingReminder.medicationId);
+    const med = findMed(pendingReminder.medicationId);
     if (!med) return;
 
     setReminders(
@@ -97,7 +101,7 @@ export function DemoControlPanel() {
     // Find a pending med to associate the departure reminder with
     const pendingReminder = reminders.find((r) => r.status === 'pending');
     const medId = pendingReminder?.medicationId || 'med-001';
-    const med = medicationDatabase.find((m) => m.id === medId);
+    const med = findMed(medId);
     if (!med) return;
 
     const alreadyHasDeparture = reminders.some((r) => r.type === 'departure' && (r.status === 'pending' || r.status === 'snoozed'));
@@ -133,7 +137,7 @@ export function DemoControlPanel() {
     const snoozedReminder = reminders.find((r) => r.status === 'snoozed');
     if (!snoozedReminder) return;
 
-    const med = medicationDatabase.find((m) => m.id === snoozedReminder.medicationId);
+    const med = findMed(snoozedReminder.medicationId);
     if (!med) return;
 
     setReminders(
@@ -165,7 +169,7 @@ export function DemoControlPanel() {
     const pendingReminder = reminders.find((r) => r.status === 'pending' && r.type === 'regular');
     if (!pendingReminder) return;
 
-    const med = medicationDatabase.find((m) => m.id === pendingReminder.medicationId);
+    const med = findMed(pendingReminder.medicationId);
     if (!med) return;
 
     const newTime = '5:15 PM';
@@ -196,8 +200,7 @@ export function DemoControlPanel() {
 
   // --- Reset everything ---
   const resetAllReminders = () => {
-    setReminders(initialReminders.map((r) => ({ ...r })));
-    clearNotifications();
+    resetToDefaults();
   };
 
   // Compute states for button hints

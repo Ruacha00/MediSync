@@ -57,7 +57,9 @@ function NotificationCard({ notification, onDismiss }: { notification: PushNotif
 }
 
 export function NotificationOverlay() {
-  const { notifications, dismissNotification } = useAppStore();
+  const { notifications, dismissNotification, pushNotificationsEnabled } = useAppStore();
+
+  if (!pushNotificationsEnabled) return null;
 
   return (
     <div className="absolute top-7 left-0 right-0 z-[100] pointer-events-none">
