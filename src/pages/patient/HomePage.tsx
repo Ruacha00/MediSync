@@ -19,6 +19,7 @@ function ReminderCard({ reminder, onRespond }: { reminder: Reminder; onRespond: 
   const isSkipped = reminder.status === 'skipped';
   const isMissed = reminder.status === 'missed';
   const isExpired = reminder.status === 'expired';
+  const isSnoozed = reminder.status === 'snoozed';
   const isDone = isTaken || isSkipped || isExpired;
 
   const handleTaken = () => {
@@ -35,6 +36,7 @@ function ReminderCard({ reminder, onRespond }: { reminder: Reminder; onRespond: 
         isTaken ? 'bg-health-50 border-health-200' :
         isMissed ? 'bg-amber-50 border-amber-200' :
         isExpired ? 'bg-red-50 border-red-200' :
+        isSnoozed ? 'bg-blue-50 border-blue-200 opacity-75' :
         isSkipped ? 'bg-gray-50 border-gray-200 opacity-60' :
         'bg-white border-gray-100 shadow-sm'
       }`}
@@ -139,8 +141,21 @@ function ReminderCard({ reminder, onRespond }: { reminder: Reminder; onRespond: 
             </div>
           )}
 
+          {/* Snoozed state */}
+          {isSnoozed && (
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-3">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-blue-500" />
+                <span className="text-xs font-medium text-blue-700">Snoozed</span>
+              </div>
+              <p className="text-[11px] text-blue-600 mt-1">
+                You chose to take this later. We'll remind you again soon.
+              </p>
+            </div>
+          )}
+
           {/* Response buttons */}
-          {!isDone && !isMissed && (
+          {!isDone && !isMissed && !isSnoozed && (
             <div className="flex gap-2">
               <Button
                 size="sm"
