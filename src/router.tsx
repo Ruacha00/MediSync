@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createHashRouter } from 'react-router-dom';
 import { LandingPage } from '@/pages/LandingPage';
 import { PatientLayout } from '@/components/layout/PatientLayout';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -13,7 +13,7 @@ import { ReportsPage } from '@/pages/dashboard/ReportsPage';
 import { IntegrationPage } from '@/pages/dashboard/IntegrationPage';
 import { BusinessModelPage } from '@/pages/business/BusinessModelPage';
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   { path: '/', element: <LandingPage /> },
   {
     path: '/patient',
