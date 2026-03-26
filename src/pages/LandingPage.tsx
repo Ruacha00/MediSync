@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Smartphone, Monitor, Briefcase, Heart, Brain, Shield } from 'lucide-react';
+import { Smartphone, Monitor, Heart, Brain, Shield } from 'lucide-react';
 
 export function LandingPage() {
   return (
@@ -52,7 +52,7 @@ export function LandingPage() {
 
       {/* Cards */}
       <div className="flex-1 flex items-start justify-center px-6 pb-12">
-        <div className="grid md:grid-cols-3 gap-6 max-w-4xl w-full">
+        <div className="grid md:grid-cols-2 gap-6 max-w-3xl w-full">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -93,25 +93,6 @@ export function LandingPage() {
             </Link>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.5 }}
-          >
-            <Link
-              to="/business"
-              className="block group bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:border-amber-200 transition-all duration-300 h-full"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center mb-5 group-hover:bg-amber-100 transition-colors">
-                <Briefcase className="w-7 h-7 text-amber-600" />
-              </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Business Model</h2>
-              <p className="text-sm text-gray-500 leading-relaxed">
-                Three-channel revenue model, competitive analysis, and value proposition for
-                hospitals and insurers.
-              </p>
-            </Link>
-          </motion.div>
         </div>
       </div>
 

@@ -11,7 +11,6 @@ import { OverviewPage } from '@/pages/dashboard/OverviewPage';
 import { PatientDetailPage } from '@/pages/dashboard/PatientDetailPage';
 import { ReportsPage } from '@/pages/dashboard/ReportsPage';
 import { IntegrationPage } from '@/pages/dashboard/IntegrationPage';
-import { BusinessModelPage } from '@/pages/business/BusinessModelPage';
 
 export const router = createHashRouter([
   { path: '/', element: <LandingPage /> },
@@ -36,5 +35,4 @@ export const router = createHashRouter([
       { path: 'integration', element: <IntegrationPage /> },
     ],
   },
-  { path: '/business', element: <BusinessModelPage /> },
 ]);
