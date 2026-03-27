@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Link, Outlet } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { BottomNav } from './BottomNav';
 import { NotificationOverlay } from '@/components/NotificationOverlay';
 import { DemoControlPanel } from '@/components/DemoControlPanel';
@@ -30,6 +31,17 @@ export function PatientLayout() {
 
         {/* Push notification overlay */}
         <NotificationOverlay />
+
+        {/* Back to landing page */}
+        <div className="absolute top-4 left-4 z-40 md:top-11">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white/95 px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm backdrop-blur-sm transition-colors hover:bg-gray-50 hover:text-gray-900"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to Home
+          </Link>
+        </div>
 
         {/* App content */}
         <div className="h-full overflow-y-auto pb-20 md:pt-7">
