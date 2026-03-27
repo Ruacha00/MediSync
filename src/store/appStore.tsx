@@ -83,7 +83,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
     }
     setReminders((prev) => {
-      if (prev.some((reminder) => reminder.medicationId === med.id)) {
+      if (prev.some((reminder) => reminder.patientId === patientId && reminder.medicationId === med.id)) {
         return prev;
       }
 

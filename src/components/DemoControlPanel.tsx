@@ -18,6 +18,7 @@ function nowTime() {
 export function DemoControlPanel() {
   const { pushNotification, reminders, setReminders, currentPatient, resetToDefaults } = useAppStore();
   const [collapsed, setCollapsed] = useState(false);
+  const currentPatientReminders = reminders.filter((reminder) => reminder.patientId === currentPatient.id);
 
   const allMeds = [...medicationDatabase, ...currentPatient.medications.filter(
     (m) => !medicationDatabase.some((db) => db.id === m.id),
@@ -31,13 +32,12 @@ export function DemoControlPanel() {
     const med = findMed(medId);
     if (!med) return;
 
-    const existing = reminders.find((r) => r.medicationId === medId && r.status === 'pending');
+    const existing = currentPatientReminders.find((r) => r.medicationId === medId && r.status === 'pending');
     if (!existing) {
-      // Create a new pending reminder card on the home page
       const newReminder: Reminder = {
         id: nextId('rem'),
         medicationId: medId,
-        patientId: 'p-001',
+        patientId: currentPatient.id,
         scheduledTime: nowTime(),
         originalPrescribedTime: med.prescribedTime === 'morning' ? '8:00 AM' : '8:00 PM',
         status: 'pending',
@@ -63,7 +63,7 @@ export function DemoControlPanel() {
 
   // --- Trigger: change a pending reminder to 'missed' status ---
   const triggerMissedDose = () => {
-    const pendingReminder = reminders.find((r) => r.status === 'pending');
+    const pendingReminder = currentPatientReminders.find((r) => r.status === 'pending');
     if (!pendingReminder) return;
 
     const med = findMed(pendingReminder.medicationId);
@@ -99,18 +99,19 @@ export function DemoControlPanel() {
   const triggerDepartureReminder = () => {
     if (!departureEvent) return;
 
-    // Find a pending med to associate the departure reminder with
-    const pendingReminder = reminders.find((r) => r.status === 'pending');
-    const medId = pendingReminder?.medicationId || 'med-001';
+    const pendingReminder = currentPatientReminders.find((r) => r.status === 'pending');
+    const medId = pendingReminder?.medicationId || activeMeds[0]?.id || 'med-001';
     const med = findMed(medId);
     if (!med) return;
 
-    const alreadyHasDeparture = reminders.some((r) => r.type === 'departure' && (r.status === 'pending' || r.status === 'snoozed'));
+    const alreadyHasDeparture = currentPatientReminders.some(
+      (r) => r.type === 'departure' && (r.status === 'pending' || r.status === 'snoozed'),
+    );
     if (!alreadyHasDeparture) {
       const newReminder: Reminder = {
         id: nextId('rem'),
         medicationId: medId,
-        patientId: 'p-001',
+        patientId: currentPatient.id,
         scheduledTime: nowTime(),
         originalPrescribedTime: med.prescribedTime === 'morning' ? '8:00 AM' : '8:00 PM',
         status: 'pending',
@@ -135,7 +136,7 @@ export function DemoControlPanel() {
 
   // --- Trigger: re-surface a snoozed reminder back to pending ---
   const triggerSnoozeReturn = () => {
-    const snoozedReminder = reminders.find((r) => r.status === 'snoozed');
+    const snoozedReminder = currentPatientReminders.find((r) => r.status === 'snoozed');
     if (!snoozedReminder) return;
 
     const med = findMed(snoozedReminder.medicationId);
@@ -167,7 +168,7 @@ export function DemoControlPanel() {
 
   // --- Trigger: AI reschedule - modify a pending reminder's time ---
   const triggerAIReschedule = () => {
-    const pendingReminder = reminders.find((r) => r.status === 'pending' && r.type === 'regular');
+    const pendingReminder = currentPatientReminders.find((r) => r.status === 'pending' && r.type === 'regular');
     if (!pendingReminder) return;
 
     const med = findMed(pendingReminder.medicationId);
@@ -205,9 +206,11 @@ export function DemoControlPanel() {
   };
 
   // Compute states for button hints
-  const pendingCount = reminders.filter((r) => r.status === 'pending').length;
-  const snoozedCount = reminders.filter((r) => r.status === 'snoozed').length;
-  const hasDeparture = reminders.some((r) => r.type === 'departure' && (r.status === 'pending' || r.status === 'snoozed'));
+  const pendingCount = currentPatientReminders.filter((r) => r.status === 'pending').length;
+  const snoozedCount = currentPatientReminders.filter((r) => r.status === 'snoozed').length;
+  const hasDeparture = currentPatientReminders.some(
+    (r) => r.type === 'departure' && (r.status === 'pending' || r.status === 'snoozed'),
+  );
 
   return (
     <div className="w-72 bg-gray-900 text-white rounded-2xl shadow-2xl overflow-hidden select-none">
@@ -230,7 +233,7 @@ export function DemoControlPanel() {
             <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-2 font-semibold">Send Reminder</p>
             <div className="space-y-1.5">
               {activeMeds.map((med) => {
-                const medReminders = reminders.filter((r) => r.medicationId === med.id);
+                const medReminders = currentPatientReminders.filter((r) => r.medicationId === med.id);
                 const pendingR = medReminders.find((r) => r.status === 'pending');
                 const snoozedR = medReminders.find((r) => r.status === 'snoozed');
                 const statusLabel = pendingR ? 'pending' : snoozedR ? 'snoozed' : null;
