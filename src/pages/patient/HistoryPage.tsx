@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAppStore } from '@/store/appStore';
+import { useAppStore } from '@/store/useAppStore';
 import { adherenceHistoryByPatient } from '@/data/adherenceHistory';
 
 export function HistoryPage() {

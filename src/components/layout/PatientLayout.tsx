@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { BottomNav } from './BottomNav';
 import { NotificationOverlay } from '@/components/NotificationOverlay';
 import { DemoControlPanel } from '@/components/DemoControlPanel';
-import { setPhoneFrameEl } from '@/lib/phoneFramePortal';
+import { setPhoneFrameEl } from '@/lib/phoneFramePortalStore';
 
 export function PatientLayout() {
   const phoneFrameRef = useRef<HTMLDivElement>(null);

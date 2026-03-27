@@ -1,22 +1,14 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-
-let _el: HTMLElement | null = null;
-const listeners = new Set<() => void>();
-
-export function setPhoneFrameEl(el: HTMLElement | null) {
-  _el = el;
-  listeners.forEach((fn) => fn());
-}
+import { getPhoneFrameEl, subscribePhoneFrame } from '@/lib/phoneFramePortalStore';
 
 export function PhoneFramePortal({ children }: { children: ReactNode }) {
-  const [target, setTarget] = useState<HTMLElement | null>(_el);
+  const [target, setTarget] = useState<HTMLElement | null>(getPhoneFrameEl());
 
   useEffect(() => {
-    const update = () => setTarget(_el);
-    listeners.add(update);
+    const update = () => setTarget(getPhoneFrameEl());
     update();
-    return () => { listeners.delete(update); };
+    return subscribePhoneFrame(update);
   }, []);
 
   if (!target) return null;

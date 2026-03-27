@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Pill, Clock, AlertTriangle, Calendar, X } from 'lucide-react';
-import { useAppStore, type PushNotification } from '@/store/appStore';
+import { useAppStore } from '@/store/useAppStore';
+import type { PushNotification } from '@/store/appStoreContext';
 
 const iconMap = {
   pill: Pill,

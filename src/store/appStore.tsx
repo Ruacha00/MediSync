@@ -1,89 +1,23 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { useState, useCallback, type ReactNode } from 'react';
 import type { Patient, Medication, Reminder } from '@/types';
 import { patients as allPatients, currentPatient as defaultPatient } from '@/data/patients';
+import { AppContext, initialReminders, type PushNotification } from './appStoreContext';
 
-export interface PushNotification {
-  id: string;
-  title: string;
-  body: string;
-  icon: 'pill' | 'clock' | 'alert' | 'calendar';
-  color: string;
-  reminderId?: string;
-  timestamp: string;
+function clonePatient(patient: Patient): Patient {
+  return {
+    ...patient,
+    conditions: [...patient.conditions],
+    medications: [...patient.medications],
+  };
 }
 
-interface AppState {
-  currentPatient: Patient;
-  patients: Patient[];
-  reminders: Reminder[];
-  onboardingCompleted: boolean;
-  calendarConnected: boolean;
-  notifications: PushNotification[];
-  pushNotificationsEnabled: boolean;
-  departureRemindersEnabled: boolean;
-  aiTimingEnabled: boolean;
-  setCurrentPatient: (p: Patient | ((prev: Patient) => Patient)) => void;
-  updateReminderStatus: (id: string, status: Reminder['status']) => void;
-  setOnboardingCompleted: (v: boolean) => void;
-  setCalendarConnected: (v: boolean) => void;
-  setReminders: (r: Reminder[]) => void;
-  addMedication: (med: Medication) => void;
-  pushNotification: (n: PushNotification) => void;
-  dismissNotification: (id: string) => void;
-  clearNotifications: () => void;
-  setPushNotificationsEnabled: (v: boolean) => void;
-  setDepartureRemindersEnabled: (v: boolean) => void;
-  setAiTimingEnabled: (v: boolean) => void;
-  resetToDefaults: () => void;
+function createInitialPatients(): Patient[] {
+  return allPatients.map(clonePatient);
 }
-
-const AppContext = createContext<AppState | null>(null);
-
-export const initialReminders: Reminder[] = [
-  {
-    id: 'rem-001',
-    medicationId: 'med-001',
-    patientId: 'p-001',
-    scheduledTime: '7:30 AM',
-    originalPrescribedTime: '8:00 AM',
-    status: 'pending',
-    aiReason: 'Your morning medication success rate is highest between 7:30-8:30 AM, right after your usual wake-up time.',
-    aiConfidence: 0.91,
-    isReschedule: false,
-    rescheduleCount: 0,
-    type: 'regular',
-  },
-  {
-    id: 'rem-002',
-    medicationId: 'med-002',
-    patientId: 'p-001',
-    scheduledTime: '8:00 AM',
-    originalPrescribedTime: '8:00 AM',
-    status: 'pending',
-    aiReason: 'Based on your past 2 weeks, you usually take Metformin with breakfast around 8:00 AM.',
-    aiConfidence: 0.89,
-    isReschedule: false,
-    rescheduleCount: 0,
-    type: 'regular',
-  },
-  {
-    id: 'rem-003',
-    medicationId: 'med-002',
-    patientId: 'p-001',
-    scheduledTime: '7:45 PM',
-    originalPrescribedTime: '8:00 PM',
-    status: 'pending',
-    aiReason: 'You tend to take evening medications most reliably around 7:45 PM, right after dinner.',
-    aiConfidence: 0.87,
-    isReschedule: false,
-    rescheduleCount: 0,
-    type: 'regular',
-  },
-];
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [currentPatient, setCurrentPatient] = useState<Patient>(defaultPatient);
-  const [patients] = useState<Patient[]>(allPatients);
+  const [patients, setPatients] = useState<Patient[]>(createInitialPatients);
+  const [currentPatient, setCurrentPatientState] = useState<Patient>(() => clonePatient(defaultPatient));
   const [reminders, setReminders] = useState<Reminder[]>(initialReminders);
   const [onboardingCompleted, setOnboardingCompleted] = useState(true);
   const [calendarConnected, setCalendarConnected] = useState(true);
@@ -92,25 +26,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [departureRemindersEnabled, setDepartureRemindersEnabled] = useState(true);
   const [aiTimingEnabled, setAiTimingEnabled] = useState(true);
 
+  const setCurrentPatient = useCallback((nextPatient: Patient | ((prev: Patient) => Patient)) => {
+    setCurrentPatientState((prev) => {
+      const resolvedPatient = typeof nextPatient === 'function' ? nextPatient(prev) : nextPatient;
+      setPatients((prevPatients) =>
+        prevPatients.map((patient) => (patient.id === resolvedPatient.id ? clonePatient(resolvedPatient) : patient)),
+      );
+      return clonePatient(resolvedPatient);
+    });
+  }, []);
+
   const updateReminderStatus = useCallback((id: string, status: Reminder['status']) => {
+    const respondedAt = new Date().toISOString();
     setReminders((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status, respondedAt: new Date().toISOString() } : r)),
+      prev.map((r) => (r.id === id ? { ...r, status, respondedAt } : r)),
     );
   }, []);
 
   const addMedication = useCallback((med: Medication) => {
-    setCurrentPatient((prev) => ({
-      ...prev,
-      medications: [...prev.medications, med],
-    }));
-    // Also create a pending reminder for this medication
+    const patientId = currentPatient.id;
+
+    setCurrentPatient((prevPatient) => {
+      if (prevPatient.medications.some((existingMedication) => existingMedication.id === med.id)) {
+        return prevPatient;
+      }
+
+      return {
+        ...prevPatient,
+        medications: [...prevPatient.medications, med],
+      };
+    });
+
     const timeLabel =
       med.prescribedTime === 'morning' ? '8:00 AM' :
       med.prescribedTime === 'evening' ? '8:00 PM' : '8:00 AM';
-    const newReminder: Reminder = {
+    const newReminders: Reminder[] = [{
       id: `rem-${med.id}-${Date.now()}`,
       medicationId: med.id,
-      patientId: 'p-001',
+      patientId,
       scheduledTime: timeLabel,
       originalPrescribedTime: timeLabel,
       status: 'pending',
@@ -119,19 +72,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       isReschedule: false,
       rescheduleCount: 0,
       type: 'regular',
-    };
-    setReminders((prev) => [...prev, newReminder]);
+    }];
     if (med.prescribedTime === 'twice_daily') {
-      const eveningReminder: Reminder = {
-        ...newReminder,
+      newReminders.push({
+        ...newReminders[0],
         id: `rem-${med.id}-eve-${Date.now()}`,
         scheduledTime: '8:00 PM',
         originalPrescribedTime: '8:00 PM',
         aiReason: `Evening dose of ${med.name}. AI will adjust timing based on your dinner habits.`,
-      };
-      setReminders((prev) => [...prev, eveningReminder]);
+      });
     }
-  }, []);
+    setReminders((prev) => {
+      if (prev.some((reminder) => reminder.medicationId === med.id)) {
+        return prev;
+      }
+
+      return [...prev, ...newReminders];
+    });
+  }, [currentPatient.id, setCurrentPatient]);
 
   const pushNotification = useCallback((n: PushNotification) => {
     setNotifications((prev) => [n, ...prev]);
@@ -146,7 +104,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetToDefaults = useCallback(() => {
-    setCurrentPatient(defaultPatient);
+    const initialPatients = createInitialPatients();
+    setPatients(initialPatients);
+    setCurrentPatientState(clonePatient(defaultPatient));
     setReminders(initialReminders.map((r) => ({ ...r })));
     setNotifications([]);
   }, []);
@@ -181,10 +141,4 @@ export function AppProvider({ children }: { children: ReactNode }) {
       {children}
     </AppContext.Provider>
   );
-}
-
-export function useAppStore() {
-  const ctx = useContext(AppContext);
-  if (!ctx) throw new Error('useAppStore must be used within AppProvider');
-  return ctx;
 }

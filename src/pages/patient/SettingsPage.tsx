@@ -4,7 +4,7 @@ import { Calendar, Link2, Bell, Shield, ChevronRight, X } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useAppStore } from '@/store/appStore';
+import { useAppStore } from '@/store/useAppStore';
 import { PhoneFramePortal } from '@/lib/phoneFramePortal';
 
 export function SettingsPage() {

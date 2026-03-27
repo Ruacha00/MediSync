@@ -3,19 +3,42 @@ import { motion } from 'framer-motion';
 import { Users, TrendingUp, AlertTriangle, Bell, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { useAppStore } from '@/store/appStore';
-import { populationStats } from '@/data/adherenceHistory';
-
-const statCards = [
-  { label: 'Total Patients', value: populationStats.totalPatients, icon: Users, color: 'text-medical-600', bg: 'bg-medical-50' },
-  { label: 'Avg Adherence', value: `${populationStats.avgAdherence}%`, icon: TrendingUp, color: 'text-health-600', bg: 'bg-health-50' },
-  { label: 'High Risk', value: populationStats.highRiskCount, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50' },
-  { label: "Today's Alerts", value: populationStats.todayAlerts, icon: Bell, color: 'text-amber-600', bg: 'bg-amber-50' },
-];
+import { useAppStore } from '@/store/useAppStore';
 
 export function OverviewPage() {
-  const { patients } = useAppStore();
+  const { patients, reminders } = useAppStore();
   const highRiskPatients = patients.filter((p) => p.riskLevel === 'high');
+  const avgAdherence = Math.round(
+    patients.reduce((sum, patient) => sum + patient.adherenceRate, 0) / Math.max(1, patients.length),
+  );
+  const todayAlerts = reminders.filter((reminder) => ['missed', 'snoozed', 'expired'].includes(reminder.status)).length;
+  const statCards = [
+    { label: 'Total Patients', value: patients.length, icon: Users, color: 'text-medical-600', bg: 'bg-medical-50' },
+    { label: 'Avg Adherence', value: `${avgAdherence}%`, icon: TrendingUp, color: 'text-health-600', bg: 'bg-health-50' },
+    { label: 'High Risk', value: highRiskPatients.length, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50' },
+    { label: "Today's Alerts", value: todayAlerts, icon: Bell, color: 'text-amber-600', bg: 'bg-amber-50' },
+  ];
+
+  const getPatientLiveStats = (patientId: string) => {
+    const patientReminders = reminders.filter((reminder) => reminder.patientId === patientId);
+    const takenCount = patientReminders.filter((reminder) => reminder.status === 'taken').length;
+    const alertCount = patientReminders.filter((reminder) => ['missed', 'snoozed', 'expired'].includes(reminder.status)).length;
+    const latestActivity = patientReminders
+      .filter((reminder) => reminder.respondedAt)
+      .sort((a, b) => new Date(b.respondedAt ?? 0).getTime() - new Date(a.respondedAt ?? 0).getTime())[0];
+
+    return {
+      takenCount,
+      totalCount: patientReminders.length,
+      alertCount,
+      latestActivityLabel: latestActivity
+        ? new Date(latestActivity.respondedAt ?? '').toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+          })
+        : 'Awaiting update',
+    };
+  };
 
   return (
     <div>
@@ -98,70 +121,90 @@ export function OverviewPage() {
                 <th className="text-left p-4 font-medium">Age</th>
                 <th className="text-left p-4 font-medium">Conditions</th>
                 <th className="text-left p-4 font-medium">Medications</th>
+                <th className="text-left p-4 font-medium">Today</th>
                 <th className="text-left p-4 font-medium">30-Day Adherence</th>
                 <th className="text-left p-4 font-medium">Risk</th>
                 <th className="text-left p-4 font-medium"></th>
               </tr>
             </thead>
             <tbody>
-              {patients.map((patient) => (
-                <tr
-                  key={patient.id}
-                  className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${
-                    patient.riskLevel === 'high' ? 'bg-red-50/30' : ''
-                  }`}
-                >
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-medical-100 flex items-center justify-center">
-                        <span className="text-xs font-bold text-medical-600">{patient.avatar}</span>
+              {patients.map((patient) => {
+                const liveStats = getPatientLiveStats(patient.id);
+
+                return (
+                  <tr
+                    key={patient.id}
+                    className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${
+                      patient.riskLevel === 'high' ? 'bg-red-50/30' : ''
+                    }`}
+                  >
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-medical-100 flex items-center justify-center">
+                          <span className="text-xs font-bold text-medical-600">{patient.avatar}</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">{patient.name}</span>
                       </div>
-                      <span className="text-sm font-medium text-gray-900">{patient.name}</span>
-                    </div>
-                  </td>
-                  <td className="p-4 text-sm text-gray-600">{patient.age}</td>
-                  <td className="p-4">
-                    <div className="flex gap-1 flex-wrap">
-                      {patient.conditions.map((c) => (
-                        <Badge key={c} variant="outline" className="text-[10px]">{c}</Badge>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="p-4 text-sm text-gray-600">{patient.medications.length}</td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      <Progress
-                        value={patient.adherenceRate}
-                        className={`h-2 w-24 ${
-                          patient.adherenceRate >= 80 ? '[&>div]:bg-health-500' :
-                          patient.adherenceRate >= 60 ? '[&>div]:bg-amber-500' :
-                          '[&>div]:bg-red-500'
+                    </td>
+                    <td className="p-4 text-sm text-gray-600">{patient.age}</td>
+                    <td className="p-4">
+                      <div className="flex gap-1 flex-wrap">
+                        {patient.conditions.map((c) => (
+                          <Badge key={c} variant="outline" className="text-[10px]">{c}</Badge>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm text-gray-600">{patient.medications.length}</td>
+                    <td className="p-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {liveStats.takenCount}/{liveStats.totalCount} doses
+                        </p>
+                        <div className="flex items-center gap-2">
+                          {liveStats.alertCount > 0 && (
+                            <Badge className="bg-amber-100 text-amber-700 text-[10px]">
+                              {liveStats.alertCount} alert{liveStats.alertCount > 1 ? 's' : ''}
+                            </Badge>
+                          )}
+                          <span className="text-[11px] text-gray-400">Updated {liveStats.latestActivityLabel}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Progress
+                          value={patient.adherenceRate}
+                          className={`h-2 w-24 ${
+                            patient.adherenceRate >= 80 ? '[&>div]:bg-health-500' :
+                            patient.adherenceRate >= 60 ? '[&>div]:bg-amber-500' :
+                            '[&>div]:bg-red-500'
+                          }`}
+                        />
+                        <span className="text-xs text-gray-500">{patient.adherenceRate}%</span>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <Badge
+                        className={`text-[10px] ${
+                          patient.riskLevel === 'low' ? 'bg-health-100 text-health-700' :
+                          patient.riskLevel === 'medium' ? 'bg-amber-100 text-amber-700' :
+                          'bg-red-100 text-red-700'
                         }`}
-                      />
-                      <span className="text-xs text-gray-500">{patient.adherenceRate}%</span>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <Badge
-                      className={`text-[10px] ${
-                        patient.riskLevel === 'low' ? 'bg-health-100 text-health-700' :
-                        patient.riskLevel === 'medium' ? 'bg-amber-100 text-amber-700' :
-                        'bg-red-100 text-red-700'
-                      }`}
-                    >
-                      {patient.riskLevel}
-                    </Badge>
-                  </td>
-                  <td className="p-4">
-                    <Link
-                      to={`/dashboard/patient/${patient.id}`}
-                      className="text-xs text-medical-500 hover:text-medical-700 font-medium"
-                    >
-                      View
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+                      >
+                        {patient.riskLevel}
+                      </Badge>
+                    </td>
+                    <td className="p-4">
+                      <Link
+                        to={`/dashboard/patient/${patient.id}`}
+                        className="text-xs text-medical-500 hover:text-medical-700 font-medium"
+                      >
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

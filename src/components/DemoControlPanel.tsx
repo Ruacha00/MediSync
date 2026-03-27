@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Bell, Clock, AlertTriangle, Calendar, Zap, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
-import { useAppStore, type PushNotification } from '@/store/appStore';
+import { useAppStore } from '@/store/useAppStore';
+import type { PushNotification } from '@/store/appStoreContext';
 import { medicationDatabase } from '@/data/medications';
 import { calendarEvents } from '@/data/calendarEvents';
 import type { Reminder } from '@/types';

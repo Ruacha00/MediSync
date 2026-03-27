@@ -4,8 +4,7 @@ import { Bell, Calendar, ChevronDown, ChevronUp, Check, Clock, X, AlertTriangle,
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { useAppStore } from '@/store/appStore';
-import { medicationDatabase } from '@/data/medications';
+import { useAppStore } from '@/store/useAppStore';
 import { calendarEvents } from '@/data/calendarEvents';
 import type { Reminder } from '@/types';
 
@@ -13,9 +12,7 @@ function ReminderCard({ reminder, onRespond }: { reminder: Reminder; onRespond: 
   const { currentPatient } = useAppStore();
   const [showAI, setShowAI] = useState(false);
   const [animatingTaken, setAnimatingTaken] = useState(false);
-  const med =
-    currentPatient.medications.find((m) => m.id === reminder.medicationId) ||
-    medicationDatabase.find((m) => m.id === reminder.medicationId);
+  const med = currentPatient.medications.find((m) => m.id === reminder.medicationId);
   if (!med) return null;
 
   const isTaken = reminder.status === 'taken';
@@ -208,8 +205,11 @@ function ReminderCard({ reminder, onRespond }: { reminder: Reminder; onRespond: 
 
 export function HomePage() {
   const { currentPatient, reminders, updateReminderStatus, departureRemindersEnabled } = useAppStore();
+  const activeMedicationIds = new Set(currentPatient.medications.map((medication) => medication.id));
 
-  const todayReminders = reminders.filter((r) => r.patientId === currentPatient.id);
+  const todayReminders = reminders.filter(
+    (reminder) => reminder.patientId === currentPatient.id && activeMedicationIds.has(reminder.medicationId),
+  );
   const takenCount = todayReminders.filter((r) => r.status === 'taken').length;
   const totalCount = todayReminders.length;
   const progressPercent = totalCount > 0 ? (takenCount / totalCount) * 100 : 0;

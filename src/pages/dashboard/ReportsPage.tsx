@@ -7,7 +7,7 @@ import {
 } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { populationStats } from '@/data/adherenceHistory';
-import { useAppStore } from '@/store/appStore';
+import { useAppStore } from '@/store/useAppStore';
 
 const responseData = [
   { name: 'Taken', value: populationStats.responseRates.taken, color: '#10B981' },
