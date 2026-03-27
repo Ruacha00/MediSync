@@ -79,19 +79,6 @@ export const initialReminders: Reminder[] = [
     rescheduleCount: 0,
     type: 'regular',
   },
-  {
-    id: 'rem-004',
-    medicationId: 'med-003',
-    patientId: 'p-001',
-    scheduledTime: '9:00 PM',
-    originalPrescribedTime: '9:00 PM',
-    status: 'pending',
-    aiReason: 'Warfarin is best taken at a consistent time each evening. 9:00 PM aligns with your nightly routine.',
-    aiConfidence: 0.93,
-    isReschedule: false,
-    rescheduleCount: 0,
-    type: 'regular',
-  },
 ];
 
 export function AppProvider({ children }: { children: ReactNode }) {
