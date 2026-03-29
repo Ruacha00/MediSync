@@ -59,7 +59,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const timeLabel =
       med.prescribedTime === 'morning' ? '8:00 AM' :
-      med.prescribedTime === 'evening' ? '8:00 PM' : '8:00 AM';
+      med.prescribedTime === 'evening' ? '6:30 PM' : '8:00 AM';
     const newReminders: Reminder[] = [{
       id: `rem-${med.id}-${Date.now()}`,
       medicationId: med.id,
@@ -67,7 +67,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       scheduledTime: timeLabel,
       originalPrescribedTime: timeLabel,
       status: 'pending',
-      aiReason: `${med.name} has been added to your regimen. AI will learn your routine and optimize timing over the next few days.`,
+      aiReason: `${med.name} has been added to your regimen. AI will adapt reminder timing over the next few days based on response patterns and dosing windows.`,
       aiConfidence: 0.75,
       isReschedule: false,
       rescheduleCount: 0,
@@ -77,9 +77,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       newReminders.push({
         ...newReminders[0],
         id: `rem-${med.id}-eve-${Date.now()}`,
-        scheduledTime: '8:00 PM',
-        originalPrescribedTime: '8:00 PM',
-        aiReason: `Evening dose of ${med.name}. AI will adjust timing based on your dinner habits.`,
+        scheduledTime: '6:30 PM',
+        originalPrescribedTime: '6:30 PM',
+        aiReason: `Evening dose of ${med.name}. AI may refine the reminder time as it learns the most reliable evening dosing window.`,
       });
     }
     setReminders((prev) => {

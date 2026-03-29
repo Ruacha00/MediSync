@@ -41,7 +41,7 @@ export function DemoControlPanel() {
         scheduledTime: nowTime(),
         originalPrescribedTime: med.prescribedTime === 'morning' ? '8:00 AM' : '8:00 PM',
         status: 'pending',
-        aiReason: `AI detected this is a good time to take ${med.name} based on your current activity pattern.`,
+        aiReason: `AI selected this reminder window for ${med.name} based on your recent adherence pattern and preferred dosing times.`,
         aiConfidence: 0.85,
         isReschedule: false,
         rescheduleCount: 0,
@@ -78,7 +78,7 @@ export function DemoControlPanel() {
               type: 'catchup' as const,
               isReschedule: true,
               rescheduleCount: r.rescheduleCount + 1,
-              aiReason: `Originally scheduled at ${r.scheduledTime}. You're still within the safe catch-up window (${med.safetyWindowHours}h). AI suggests taking it now.`,
+              aiReason: `Originally scheduled at ${r.scheduledTime}. This dose is still within the ${med.safetyWindowHours}-hour safe catch-up window, so AI is surfacing it again now.`,
               aiConfidence: 0.78,
             }
           : r,
@@ -115,7 +115,7 @@ export function DemoControlPanel() {
         scheduledTime: nowTime(),
         originalPrescribedTime: med.prescribedTime === 'morning' ? '8:00 AM' : '8:00 PM',
         status: 'pending',
-        aiReason: `You have "${departureEvent.title}" coming up. Take ${med.name} before you leave to stay on schedule.`,
+        aiReason: `AI noticed a tighter schedule window before your next event and moved ${med.name} forward to help keep today's dosing plan on track.`,
         aiConfidence: 0.92,
         isReschedule: false,
         rescheduleCount: 0,
@@ -149,7 +149,7 @@ export function DemoControlPanel() {
               ...r,
               status: 'pending' as const,
               scheduledTime: nowTime(),
-              aiReason: `You snoozed this earlier. It's been 30 minutes - taking ${med.name} now still fits your schedule.`,
+              aiReason: `This reminder was delayed earlier. AI is bringing ${med.name} back now because it still fits today's dosing window.`,
               aiConfidence: 0.82,
             }
           : r,
@@ -174,7 +174,15 @@ export function DemoControlPanel() {
     const med = findMed(pendingReminder.medicationId);
     if (!med) return;
 
-    const newTime = '5:15 PM';
+    const isEveningDose = pendingReminder.scheduledTime.includes('PM');
+    const newTime = isEveningDose ? '7:15 PM' : '9:15 AM';
+    const aiReason = isEveningDose
+      ? `AI shifted ${med.name} to ${newTime} to better align this evening dose with your updated medication window.`
+      : `AI shifted ${med.name} to ${newTime} to better fit this morning's available reminder window.`;
+    const notificationBody = isEveningDose
+      ? `AI optimized this evening dose window and moved it to ${newTime}.`
+      : `AI optimized this morning dose window and moved it to ${newTime}.`;
+
     setReminders(
       reminders.map((r) =>
         r.id === pendingReminder.id
@@ -183,7 +191,7 @@ export function DemoControlPanel() {
               scheduledTime: newTime,
               isReschedule: true,
               rescheduleCount: r.rescheduleCount + 1,
-              aiReason: `AI detected you're in a meeting until 5:00 PM. Rescheduled ${med.name} to ${newTime} so you won't be interrupted.`,
+              aiReason,
               aiConfidence: 0.88,
             }
           : r,
@@ -193,7 +201,7 @@ export function DemoControlPanel() {
     pushNotification({
       id: nextId(),
       title: `Smart Reschedule: ${med.name}`,
-      body: `AI detected a meeting conflict. Moved to ${newTime}.`,
+      body: notificationBody,
       icon: 'clock',
       color: '#6366F1',
       timestamp: nowTime(),

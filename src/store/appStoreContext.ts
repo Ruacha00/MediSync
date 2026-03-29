@@ -39,8 +39,8 @@ export interface AppState {
 
 const timingByPrescription: Record<Medication['prescribedTime'], string[]> = {
   morning: ['7:30 AM'],
-  evening: ['7:45 PM'],
-  twice_daily: ['8:00 AM', '8:00 PM'],
+  evening: ['6:30 PM'],
+  twice_daily: ['8:00 AM', '6:30 PM'],
 };
 
 const statusPatternByRisk: Record<Patient['riskLevel'], Reminder['status'][]> = {
@@ -80,10 +80,10 @@ function createReminder(patient: Patient, medication: Medication, scheduledTime:
     respondedAt,
     aiReason:
       status === 'missed'
-        ? `${patient.name} missed this dose earlier today. AI recommends closer monitoring for ${medication.name}.`
+        ? `This dose was not confirmed earlier. AI is highlighting ${medication.name} now to support timely follow-up.`
         : status === 'snoozed'
-        ? `${patient.name} delayed this dose. AI is holding the reminder until a more convenient time.`
-        : `AI scheduled ${medication.name} at ${scheduledTime} based on ${patient.name}'s recent routine.`,
+        ? `This dose was delayed earlier. AI is holding ${medication.name} for a more suitable reminder window.`
+        : `AI scheduled ${medication.name} at ${scheduledTime} based on recent adherence timing and dosing preferences.`,
     aiConfidence: Number(confidence.toFixed(2)),
     isReschedule: status === 'snoozed',
     rescheduleCount: status === 'snoozed' ? 1 : 0,
