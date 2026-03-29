@@ -50,11 +50,24 @@ const statusPatternByRisk: Record<Patient['riskLevel'], Reminder['status'][]> = 
 };
 
 function createReminder(patient: Patient, medication: Medication, scheduledTime: string, index: number): Reminder {
-  const status = statusPatternByRisk[patient.riskLevel][index % statusPatternByRisk[patient.riskLevel].length];
+  const status =
+    patient.id === 'p-001'
+      ? scheduledTime === '7:30 AM' || scheduledTime === '8:00 AM'
+        ? 'taken'
+        : 'pending'
+      : statusPatternByRisk[patient.riskLevel][index % statusPatternByRisk[patient.riskLevel].length];
   const confidence = Math.max(0.72, Math.min(0.94, patient.adherenceRate / 100 - index * 0.03));
   const respondedAt =
     status === 'pending'
       ? undefined
+      : patient.id === 'p-001' && status === 'taken'
+      ? new Date(
+          2026,
+          2,
+          27,
+          scheduledTime === '7:30 AM' ? 7 : 8,
+          scheduledTime === '7:30 AM' ? 42 : 12,
+        ).toISOString()
       : new Date(2026, 2, 27, 8 + (index % 8), 15).toISOString();
 
   return {
