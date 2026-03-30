@@ -1,7 +1,7 @@
 import { useState, useCallback, type ReactNode } from 'react';
 import type { Patient, Medication, Reminder } from '@/types';
 import { patients as allPatients, currentPatient as defaultPatient } from '@/data/patients';
-import { AppContext, initialReminders, type PushNotification } from './appStoreContext';
+import { AppContext, initialReminders, type PushNotification, type DepartureReminderBanner } from './appStoreContext';
 
 function clonePatient(patient: Patient): Patient {
   return {
@@ -22,6 +22,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [onboardingCompleted, setOnboardingCompleted] = useState(true);
   const [calendarConnected, setCalendarConnected] = useState(true);
   const [notifications, setNotifications] = useState<PushNotification[]>([]);
+  const [departureReminderBanner, setDepartureReminderBanner] = useState<DepartureReminderBanner | null>(null);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(true);
   const [departureRemindersEnabled, setDepartureRemindersEnabled] = useState(true);
   const [aiTimingEnabled, setAiTimingEnabled] = useState(true);
@@ -59,7 +60,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const timeLabel =
       med.prescribedTime === 'morning' ? '8:00 AM' :
-      med.prescribedTime === 'evening' ? '6:30 PM' : '8:00 AM';
+      med.prescribedTime === 'evening' ? '6:30 PM' : '9:00 AM';
     const newReminders: Reminder[] = [{
       id: `rem-${med.id}-${Date.now()}`,
       medicationId: med.id,
@@ -103,12 +104,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setNotifications([]);
   }, []);
 
+  const showDepartureReminderBanner = useCallback((banner: DepartureReminderBanner) => {
+    setDepartureReminderBanner(banner);
+  }, []);
+
+  const clearDepartureReminderBanner = useCallback(() => {
+    setDepartureReminderBanner(null);
+  }, []);
+
   const resetToDefaults = useCallback(() => {
     const initialPatients = createInitialPatients();
     setPatients(initialPatients);
     setCurrentPatientState(clonePatient(defaultPatient));
     setReminders(initialReminders.map((r) => ({ ...r })));
     setNotifications([]);
+    setDepartureReminderBanner(null);
   }, []);
 
   return (
@@ -120,6 +130,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         onboardingCompleted,
         calendarConnected,
         notifications,
+        departureReminderBanner,
         pushNotificationsEnabled,
         departureRemindersEnabled,
         aiTimingEnabled,
@@ -132,6 +143,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         pushNotification,
         dismissNotification,
         clearNotifications,
+        showDepartureReminderBanner,
+        clearDepartureReminderBanner,
         setPushNotificationsEnabled,
         setDepartureRemindersEnabled,
         setAiTimingEnabled,

@@ -16,7 +16,15 @@ function nowTime() {
 }
 
 export function DemoControlPanel() {
-  const { pushNotification, reminders, setReminders, currentPatient, resetToDefaults } = useAppStore();
+  const {
+    pushNotification,
+    reminders,
+    setReminders,
+    currentPatient,
+    resetToDefaults,
+    showDepartureReminderBanner,
+    clearDepartureReminderBanner,
+  } = useAppStore();
   const [collapsed, setCollapsed] = useState(false);
   const currentPatientReminders = reminders.filter((reminder) => reminder.patientId === currentPatient.id);
 
@@ -104,30 +112,16 @@ export function DemoControlPanel() {
     const med = findMed(medId);
     if (!med) return;
 
-    const alreadyHasDeparture = currentPatientReminders.some(
-      (r) => r.type === 'departure' && (r.status === 'pending' || r.status === 'snoozed'),
-    );
-    if (!alreadyHasDeparture) {
-      const newReminder: Reminder = {
-        id: nextId('rem'),
-        medicationId: medId,
-        patientId: currentPatient.id,
-        scheduledTime: nowTime(),
-        originalPrescribedTime: med.prescribedTime === 'morning' ? '8:00 AM' : '8:00 PM',
-        status: 'pending',
-        aiReason: `AI noticed a tighter schedule window before your next event and moved ${med.name} forward to help keep today's dosing plan on track.`,
-        aiConfidence: 0.92,
-        isReschedule: false,
-        rescheduleCount: 0,
-        type: 'departure',
-      };
-      setReminders([...reminders, newReminder]);
-    }
+    showDepartureReminderBanner({
+      eventTitle: departureEvent.title,
+      eventTime: '9:00 AM',
+      medicationName: med.name,
+    });
 
     pushNotification({
       id: nextId(),
       title: 'Departure Reminder',
-      body: `"${departureEvent.title}" starts soon. Take your medication before leaving!`,
+      body: `"${departureEvent.title}" starts soon. Take ${med.name} before leaving to avoid the conflict window.`,
       icon: 'calendar',
       color: '#F59E0B',
       timestamp: nowTime(),
@@ -197,6 +191,7 @@ export function DemoControlPanel() {
           : r,
       ),
     );
+    clearDepartureReminderBanner();
 
     pushNotification({
       id: nextId(),
@@ -216,9 +211,6 @@ export function DemoControlPanel() {
   // Compute states for button hints
   const pendingCount = currentPatientReminders.filter((r) => r.status === 'pending').length;
   const snoozedCount = currentPatientReminders.filter((r) => r.status === 'snoozed').length;
-  const hasDeparture = currentPatientReminders.some(
-    (r) => r.type === 'departure' && (r.status === 'pending' || r.status === 'snoozed'),
-  );
 
   return (
     <div className="w-72 bg-gray-900 text-white rounded-2xl shadow-2xl overflow-hidden select-none">
@@ -288,13 +280,13 @@ export function DemoControlPanel() {
 
               <button
                 onClick={triggerDepartureReminder}
-                disabled={hasDeparture}
+                disabled={pendingCount === 0}
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors text-left group disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Calendar className="w-3.5 h-3.5 text-gray-500 group-hover:text-amber-400 transition-colors" />
                 <div className="flex-1">
                   <p className="text-xs font-medium">Departure Reminder</p>
-                  <p className="text-[10px] text-gray-500">Add departure reminder card</p>
+                  <p className="text-[10px] text-gray-500">Send an early reminder before the conflict</p>
                 </div>
               </button>
 

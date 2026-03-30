@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useAppStore } from '@/store/useAppStore';
-import { calendarEvents } from '@/data/calendarEvents';
 import type { Reminder } from '@/types';
 
 function ReminderCard({ reminder, onRespond }: { reminder: Reminder; onRespond: (id: string, status: Reminder['status']) => void }) {
@@ -204,7 +203,7 @@ function ReminderCard({ reminder, onRespond }: { reminder: Reminder; onRespond: 
 }
 
 export function HomePage() {
-  const { currentPatient, reminders, updateReminderStatus, departureRemindersEnabled } = useAppStore();
+  const { currentPatient, reminders, updateReminderStatus, departureRemindersEnabled, departureReminderBanner } = useAppStore();
   const activeMedicationIds = new Set(currentPatient.medications.map((medication) => medication.id));
 
   const todayReminders = reminders.filter(
@@ -213,8 +212,6 @@ export function HomePage() {
   const takenCount = todayReminders.filter((r) => r.status === 'taken').length;
   const totalCount = todayReminders.length;
   const progressPercent = totalCount > 0 ? (takenCount / totalCount) * 100 : 0;
-
-  const departureEvent = calendarEvents.find((e) => e.isOutdoor);
 
   return (
     <div className="px-5 pt-6">
@@ -247,8 +244,7 @@ export function HomePage() {
         <Progress value={progressPercent} className="h-2 bg-white/20 [&>div]:bg-white" />
       </motion.div>
 
-      {/* Departure reminder */}
-      {departureEvent && departureRemindersEnabled && (
+      {departureRemindersEnabled && departureReminderBanner && (
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -260,9 +256,8 @@ export function HomePage() {
             <span className="text-xs font-semibold text-amber-700">Departure Reminder</span>
           </div>
           <p className="text-sm text-amber-800">
-            You have <span className="font-semibold">"{departureEvent.title}"</span> at{' '}
-            {new Date(departureEvent.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}.
-            Remember to take your medication before leaving!
+            You have <span className="font-semibold">"{departureReminderBanner.eventTitle}"</span> at{' '}
+            {departureReminderBanner.eventTime}. Remember to take your medication before leaving!
           </p>
         </motion.div>
       )}

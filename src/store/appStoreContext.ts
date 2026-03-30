@@ -12,6 +12,12 @@ export interface PushNotification {
   timestamp: string;
 }
 
+export interface DepartureReminderBanner {
+  eventTitle: string;
+  eventTime: string;
+  medicationName: string;
+}
+
 export interface AppState {
   currentPatient: Patient;
   patients: Patient[];
@@ -19,6 +25,7 @@ export interface AppState {
   onboardingCompleted: boolean;
   calendarConnected: boolean;
   notifications: PushNotification[];
+  departureReminderBanner: DepartureReminderBanner | null;
   pushNotificationsEnabled: boolean;
   departureRemindersEnabled: boolean;
   aiTimingEnabled: boolean;
@@ -31,6 +38,8 @@ export interface AppState {
   pushNotification: (n: PushNotification) => void;
   dismissNotification: (id: string) => void;
   clearNotifications: () => void;
+  showDepartureReminderBanner: (banner: DepartureReminderBanner) => void;
+  clearDepartureReminderBanner: () => void;
   setPushNotificationsEnabled: (v: boolean) => void;
   setDepartureRemindersEnabled: (v: boolean) => void;
   setAiTimingEnabled: (v: boolean) => void;
@@ -40,7 +49,7 @@ export interface AppState {
 const timingByPrescription: Record<Medication['prescribedTime'], string[]> = {
   morning: ['7:30 AM'],
   evening: ['6:30 PM'],
-  twice_daily: ['8:00 AM', '6:30 PM'],
+  twice_daily: ['9:00 AM', '6:30 PM'],
 };
 
 const statusPatternByRisk: Record<Patient['riskLevel'], Reminder['status'][]> = {
@@ -52,7 +61,7 @@ const statusPatternByRisk: Record<Patient['riskLevel'], Reminder['status'][]> = 
 function createReminder(patient: Patient, medication: Medication, scheduledTime: string, index: number): Reminder {
   const status =
     patient.id === 'p-001'
-      ? scheduledTime === '7:30 AM' || scheduledTime === '8:00 AM'
+      ? scheduledTime === '7:30 AM'
         ? 'taken'
         : 'pending'
       : statusPatternByRisk[patient.riskLevel][index % statusPatternByRisk[patient.riskLevel].length];
@@ -65,8 +74,8 @@ function createReminder(patient: Patient, medication: Medication, scheduledTime:
           2026,
           2,
           27,
-          scheduledTime === '7:30 AM' ? 7 : 8,
-          scheduledTime === '7:30 AM' ? 42 : 12,
+          7,
+          42,
         ).toISOString()
       : new Date(2026, 2, 27, 8 + (index % 8), 15).toISOString();
 
